@@ -81,9 +81,9 @@ cors: 用于处理跨域资源共享（CORS）问题。
 
 dotenv: 用于从 .env 文件中加载环境变量（API密钥）。
 
-**配置API密钥**
+**配置API密钥和代理设置**
 在 backend 目录下，手动创建一个名为 .env 的文件。该文件用于存放所有API的密钥，不会被上传到Git。
-打开`.env`文件，并按照以下格式填入你申请的API密钥：
+打开`.env`文件，并按照以下格式填入你申请的API密钥和代理设置：
 
 ```bash
 # 聚合数据 API Key
@@ -98,6 +98,11 @@ GEMINI_API_KEY=你的Gemini_API_KEY
 
 # 天行数据 API Key
 TIANXING_API_KEY=你的天行数据API_KEY（全平台API统一使用）
+
+# 代理配置
+GEMINI_PROXY_PROTOCOL=你使用的协议
+GEMINI_PROXY_HOST=代理的IP地址
+GEMINI_PROXY_PORT=代理的端口
 ```
 
 ### 3. 项目启动

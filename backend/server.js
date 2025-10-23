@@ -137,6 +137,11 @@ const amapApiKey = process.env.AMAP_API_KEY;
 const geminiApiKey = process.env.GEMINI_API_KEY;
 const tianxingApiKey = process.env.TIANXING_API_KEY;
 
+// ---从.env加载代理配置 ---
+const proxyProtocol = process.env.GEMINI_PROXY_PROTOCOL;
+const proxyHost = process.env.GEMINI_PROXY_HOST;
+const proxyPort = process.env.GEMINI_PROXY_PORT;
+
 // --- API 接口定义 ---
 
 app.get('/', (req, res) => {
@@ -149,7 +154,7 @@ app.get('/api/regions', (req, res) => {
 
     if (!parentCode) {
         // 如果没有parent参数，返回顶级列表（省份和直辖市）
-        // 我们只返回前端需要的 value 和 label 字段
+        // 只返回前端需要的 value 和 label 字段
         res.json(regionTree.map(r => ({ value: r.value, label: r.label })));
     } else {
         // 递归查找父节点
@@ -230,7 +235,7 @@ app.post('/api/getHealthPlan', async (req, res) => {
 1. 请优先推荐美味、健康、且符合中国人口味的家常菜。
 2. 请尽量让推荐的菜品多样化，避免总是推荐如“鸡胸肉沙拉”、“烤三文鱼”这类常见的西式健身餐，多推荐中餐。。
 3. 推荐需要充分考虑我的体重等级和天气状况。例如，如果超重，推荐低热量食物；如果天气不佳（如雨天、空气污染），推荐室内运动。
-4. 为每道推荐菜额外提供一个"search_keyword"字段。这个关键词必须是这道菜里最核心的、单一的、常见的中式食材名称（例如："排骨"），以便于后续在菜谱API中进行精确搜索。
+4. 为每道推荐菜额外提供一个"search_keyword"字段。这个关键词必须是这道菜里最核心的、单一的、常见的中式食材名称（例如：“排骨”），以便于后续在菜谱API中进行精确搜索。
 5. 你的回答应该友好、鼓励，并简要说明推荐的理由。
 6. 请严格按照下面的JSON格式返回你的建议，不要在JSON前后添加任何多余的文字、解释或markdown标记。
 
@@ -274,19 +279,24 @@ app.post('/api/getHealthPlan', async (req, res) => {
   "summary": "对今天健康计划的一段总结和鼓励"
 }
 `;
+        // --- 动态构建Gemini-Axios配置 ---
+        const geminiAxiosConfig = {};
+        if (proxyProtocol && proxyHost && proxyPort) {
+            geminiAxiosConfig.proxy = {
+                protocol: proxyProtocol,
+                host: proxyHost,
+                port: parseInt(proxyPort, 10) // 确保端口是数字
+            };
+            console.log("检测到代理配置，正在使用:", geminiAxiosConfig.proxy);
+        }
+
         const geminiResponse = await axios.post(
             `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`,
             {
                 contents: [{ parts: [{ text: prompt }] }],
                 generationConfig: { responseMimeType: "application/json" }
             },
-            {
-                proxy: {
-                    protocol: 'http',
-                    host: '127.0.0.1',
-                    port: 7897,
-                }
-            }
+            geminiAxiosConfig // 使用动态配置，替换掉硬编码的代理
         );
 
         console.log("从Gemini API收到的完整响应:", JSON.stringify(geminiResponse.data, null, 2));
